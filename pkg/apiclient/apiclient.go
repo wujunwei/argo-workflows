@@ -68,15 +68,18 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
+	var authStr string
+	if opts.AuthSupplier != nil {
+		authStr = opts.AuthSupplier()
+	}
 	if opts.ArgoServerOpts.HTTP1 {
-		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers)
+		return newHTTP1Client(opts.ArgoServerOpts.GetURL(), authStr, opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers)
 	} else if opts.ArgoServerOpts.URL != "" {
-		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
+		return newArgoServerClient(opts.ArgoServerOpts, authStr)
 	} else {
 		if opts.ClientConfigSupplier != nil {
 			opts.ClientConfig = opts.ClientConfigSupplier()
 		}
-
 		ctx, client, err := newArgoKubeClient(opts.GetContext(), opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 		return ctx, client, err
 	}
